@@ -4,3 +4,4 @@ version=1.0
 versionCode=1
 author=https://github.com/HugoDataAnalyst/stayART
 description=Automatically enforce Factory ART version and prevent Play Store updates
+updateJson=https://raw.githubusercontent.com/HugoDataAnalyst/stayART/main/update.json
