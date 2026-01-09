@@ -1,0 +1,71 @@
+name: Build Magisk Module
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'HugoDataAnalyst'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: get_version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+          else
+            VERSION="dev"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Update module.prop version
+        run: |
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          sed -i "s/^version=.*/version=$VERSION/" module.prop
+          # Generate versionCode from semantic version (e.g., 1.0.2 -> 102)
+          VERSION_CODE=$(echo "$VERSION" | sed 's/\.//g' | sed 's/[^0-9]//g')
+          if [ -z "$VERSION_CODE" ]; then
+            VERSION_CODE=1
+          fi
+          sed -i "s/^versionCode=.*/versionCode=$VERSION_CODE/" module.prop
+          cat module.prop
+
+      - name: Fix line endings
+        run: |
+          # Convert Windows line endings to Unix
+          sed -i 's/\r$//' service.sh
+          sed -i 's/\r$//' config.sh
+          sed -i 's/\r$//' module.prop
+          sed -i 's/\r$//' META-INF/com/google/android/update-binary
+          sed -i 's/\r$//' META-INF/com/google/android/updater-script
+
+      - name: Create module zip
+        run: |
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          zip -r "stayART-$VERSION.zip" \
+            META-INF \
+            module.prop \
+            service.sh \
+            config.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stayART-${{ steps.get_version.outputs.VERSION }}
+          path: stayART-*.zip
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: stayART-*.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
