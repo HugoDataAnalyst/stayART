@@ -114,4 +114,21 @@ else
     fi
 fi
 
+# --- Disable Update Services ---
+log_msg "Ensuring update services are disabled..."
+
+pm disable --user 0 com.google.android.gms/.update.SystemUpdatePersistentListenerService 2>/dev/null
+if [ $? -eq 0 ]; then
+    log_msg "Disabled SystemUpdatePersistentListenerService"
+else
+    log_verbose "SystemUpdatePersistentListenerService already disabled or not found"
+fi
+
+pm disable --user 0 com.google.android.gms/.update.SystemUpdateService 2>/dev/null
+if [ $? -eq 0 ]; then
+    log_msg "Disabled SystemUpdateService"
+else
+    log_verbose "SystemUpdateService already disabled or not found"
+fi
+
 log_msg "StayART service completed."
